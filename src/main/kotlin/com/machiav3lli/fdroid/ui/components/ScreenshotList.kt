@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.machiav3lli.fdroid.database.entity.Repository
 import com.machiav3lli.fdroid.entity.Screenshot
@@ -56,9 +57,10 @@ fun ScreenshotList(
             NetworkImage(
                 modifier = Modifier
                     .wrapContentWidth()
-                    .requiredHeight(300.dp)
+                    .requiredHeight(250.dp)
                     .clip(MaterialTheme.shapes.large)
                     .clickable { onScreenShotClick(index) },
+                contentScale = ContentScale.Fit,
                 data = image,
                 isScreenshot = true,
             )

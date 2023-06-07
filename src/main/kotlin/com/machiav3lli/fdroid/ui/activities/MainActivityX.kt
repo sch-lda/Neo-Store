@@ -17,7 +17,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -29,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
@@ -134,7 +132,6 @@ class MainActivityX : AppCompatActivity() {
                 }
                 val mScope = rememberCoroutineScope()
                 navController = rememberAnimatedNavController()
-                val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
                 var barVisible by remember { mutableStateOf(true) }
 
                 navController.addOnDestinationChangedListener { _, destination, _ ->
@@ -150,7 +147,6 @@ class MainActivityX : AppCompatActivity() {
                 }
 
                 Scaffold(
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onBackground,
                     bottomBar = {
@@ -163,10 +159,7 @@ class MainActivityX : AppCompatActivity() {
                         }
                     },
                     topBar = {
-                        TopBar(
-                            title = stringResource(id = R.string.application_name),
-                            scrollBehavior = scrollBehavior,
-                        ) {
+                        TopBar(title = stringResource(id = R.string.application_name)) {
                             AnimatedVisibility(barVisible) {
                                 ExpandableSearchAction(
                                     query = query,
@@ -255,6 +248,7 @@ class MainActivityX : AppCompatActivity() {
                 expanded.value = false
                 true
             }
+
             keyCode == KeyEvent.KEYCODE_BACK                   -> moveTaskToBack(true)
             else                                               -> super.onKeyDown(keyCode, event)
         }
@@ -272,9 +266,11 @@ class MainActivityX : AppCompatActivity() {
                 uri?.scheme == "package" || uri?.scheme == "fdroid.app" -> {
                     uri.schemeSpecificPart?.nullIfEmpty()
                 }
+
                 uri?.scheme == "market" && uri.host == "details"        -> {
                     uri.getQueryParameter("id")?.nullIfEmpty()
                 }
+
                 uri != null && uri.scheme in setOf("http", "https")     -> {
                     val host = uri.host.orEmpty()
                     if (host == "f-droid.org" || host.endsWith(".f-droid.org")) {
@@ -283,6 +279,7 @@ class MainActivityX : AppCompatActivity() {
                         null
                     }
                 }
+
                 else                                                    -> {
                     null
                 }
@@ -295,6 +292,7 @@ class MainActivityX : AppCompatActivity() {
                 // TODO directly update the apps??
                 navController.navigate(NavItem.Installed.destination)
             }
+
             is SpecialIntent.Install -> {
                 val packageName = specialIntent.packageName
                 if (!packageName.isNullOrEmpty()) {
@@ -326,12 +324,14 @@ class MainActivityX : AppCompatActivity() {
                     }
                 }
             }
+
             ACTION_UPDATES     -> { // TODO Handle EXTRA_UPDATES
                 if (!intent.getBooleanExtra(EXTRA_INTENT_HANDLED, false)) {
                     intent.putExtra(EXTRA_INTENT_HANDLED, true)
                     handleSpecialIntent(SpecialIntent.Updates)
                 }
             }
+
             ACTION_INSTALL     -> handleSpecialIntent(
                 SpecialIntent.Install(
                     intent.packageName,

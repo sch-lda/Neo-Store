@@ -3,10 +3,10 @@ package com.machiav3lli.fdroid.ui.compose
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.machiav3lli.fdroid.R
+import com.machiav3lli.fdroid.database.entity.Installed
 import com.machiav3lli.fdroid.database.entity.Product
 import com.machiav3lli.fdroid.database.entity.Repository
 import com.machiav3lli.fdroid.entity.ProductItem
@@ -36,17 +37,21 @@ fun ProductsHorizontalRecycler(
     modifier: Modifier = Modifier,
     productsList: List<Product>?,
     repositories: Map<Long, Repository>,
+    installedMap: Map<String, Installed> = emptyMap(),
     rowsNumber: Int = 2,
     onUserClick: (ProductItem) -> Unit = {},
 ) {
     LazyHorizontalStaggeredGrid(
-        modifier = modifier.height(PRODUCT_CARD_HEIGHT * rowsNumber + 8.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(PRODUCT_CARD_HEIGHT * rowsNumber + 8.dp),
         rows = StaggeredGridCells.Fixed(rowsNumber),
         verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalItemSpacing = 8.dp,
         contentPadding = PaddingValues(horizontal = 8.dp),
     ) {
         items(productsList ?: emptyList()) { product ->
-            product.toItem().let { item ->
+            product.toItem(installedMap[product.packageName]).let { item ->
                 ProductCard(item, repositories[item.repositoryId], onUserClick)
             }
         }
@@ -93,11 +98,16 @@ fun <T> VerticalItemList(
                 text = stringResource(id = R.string.loading_list),
                 color = MaterialTheme.colorScheme.onBackground
             )
+
             list.isNotEmpty() -> {
-                LazyColumn(verticalArrangement = spacedBy(4.dp)) {
+                LazyColumn(
+                    contentPadding = PaddingValues(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     items(items = list, key = itemKey, itemContent = itemContent)
                 }
             }
+
             else -> Text(
                 text = stringResource(id = R.string.no_applications_available),
                 color = MaterialTheme.colorScheme.onBackground

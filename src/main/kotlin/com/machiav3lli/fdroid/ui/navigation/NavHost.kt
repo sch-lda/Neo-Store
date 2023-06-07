@@ -19,7 +19,6 @@ import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.machiav3lli.fdroid.MainApplication
 import com.machiav3lli.fdroid.content.Preferences
-import com.machiav3lli.fdroid.ui.activities.PrefsActivityX
 import com.machiav3lli.fdroid.pages.ExplorePage
 import com.machiav3lli.fdroid.pages.InstalledPage
 import com.machiav3lli.fdroid.pages.LatestPage
@@ -28,6 +27,7 @@ import com.machiav3lli.fdroid.pages.PrefsOtherPage
 import com.machiav3lli.fdroid.pages.PrefsPersonalPage
 import com.machiav3lli.fdroid.pages.PrefsReposPage
 import com.machiav3lli.fdroid.pages.PrefsUpdatesPage
+import com.machiav3lli.fdroid.ui.activities.PrefsActivityX
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -40,20 +40,20 @@ fun MainNavHost(
         navController = navController,
         startDestination = NavItem.Permissions.destination,
     ) {
-        slideDownComposable(NavItem.Permissions.destination) {
+        fadeComposable(NavItem.Permissions.destination) {
             PermissionsPage {
                 navController.navigate(Preferences[Preferences.Key.DefaultTab].valueString)
             }
         }
-        slideDownComposable(NavItem.Explore.destination) {
+        fadeComposable(NavItem.Explore.destination) {
             val viewModel = MainApplication.mainActivity?.exploreViewModel!!
             ExplorePage(viewModel)
         }
-        slideDownComposable(route = NavItem.Latest.destination) {
+        fadeComposable(route = NavItem.Latest.destination) {
             val viewModel = MainApplication.mainActivity?.latestViewModel!!
             LatestPage(viewModel)
         }
-        slideDownComposable(NavItem.Installed.destination) {
+        fadeComposable(NavItem.Installed.destination) {
             val viewModel = MainApplication.mainActivity?.installedViewModel!!
             InstalledPage(viewModel)
         }
@@ -73,13 +73,13 @@ fun PrefsNavHost(
         navController = navController,
         startDestination = NavItem.PersonalPrefs.destination
     ) {
-        slideDownComposable(NavItem.PersonalPrefs.destination) {
+        fadeComposable(NavItem.PersonalPrefs.destination) {
             PrefsPersonalPage()
         }
-        slideDownComposable(NavItem.UpdatesPrefs.destination) {
+        fadeComposable(NavItem.UpdatesPrefs.destination) {
             PrefsUpdatesPage()
         }
-        slideDownComposable(
+        fadeComposable(
             "${NavItem.ReposPrefs.destination}?address={address}?fingerprint={fingerprint}",
             args = listOf(
                 navArgument("address") {
@@ -98,7 +98,7 @@ fun PrefsNavHost(
             val fingerprint = args.getString("fingerprint")?.uppercase() ?: ""
             PrefsReposPage(viewModel, address, fingerprint)
         }
-        slideDownComposable(NavItem.OtherPrefs.destination) {
+        fadeComposable(NavItem.OtherPrefs.destination) {
             val viewModel = MainApplication.prefsActivity?.prefsViewModel!!
             PrefsOtherPage(viewModel)
         }
@@ -115,6 +115,22 @@ fun NavGraphBuilder.slideDownComposable(
         args,
         enterTransition = { slideInVertically { height -> -height } + fadeIn() },
         exitTransition = { slideOutVertically { height -> height } + fadeOut() }
+    ) {
+        composable(it)
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+fun NavGraphBuilder.fadeComposable(
+    route: String,
+    args: List<NamedNavArgument> = emptyList(),
+    composable: @Composable (AnimatedVisibilityScope.(NavBackStackEntry) -> Unit),
+) {
+    composable(
+        route,
+        args,
+        enterTransition = { fadeIn(initialAlpha = 0.3f) },
+        exitTransition = { fadeOut(targetAlpha = 0.3f) }
     ) {
         composable(it)
     }

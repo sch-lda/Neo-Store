@@ -3,7 +3,12 @@
 package com.machiav3lli.fdroid.utility.extension.text
 
 import android.util.Log
+import java.text.DateFormat
 import java.util.*
+
+
+val RE_jumpChars = Regex("""[\t]""")
+val RE_finishChars = Regex("""[\n]""")
 
 fun <T : CharSequence> T.nullIfEmpty(): T? {
     return if (isNullOrEmpty()) null else this
@@ -17,6 +22,13 @@ fun Long.formatSize(): String {
             Pair(size / 1024f, index + 1) else null
     }.take(sizeFormats.size).last()
     return sizeFormats[index].format(Locale.US, size)
+}
+
+fun Long.formatDateTime(): String {
+    val nowDate = DateFormat.getDateInstance().format(Date(System.currentTimeMillis()))
+    val mDate = DateFormat.getDateInstance().format(Date(this))
+    return if (nowDate == mDate) DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(this))
+    else mDate
 }
 
 val String.pathCropped: String
@@ -52,7 +64,7 @@ fun Char.halfByte(): Int {
         in '0'..'9' -> this - '0'
         in 'a'..'f' -> this - 'a' + 10
         in 'A'..'F' -> this - 'A' + 10
-        else -> -1
+        else        -> -1
     }
 }
 

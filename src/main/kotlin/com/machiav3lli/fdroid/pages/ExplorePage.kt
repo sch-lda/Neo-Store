@@ -3,17 +3,19 @@ package com.machiav3lli.fdroid.pages
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,10 +37,12 @@ import com.machiav3lli.fdroid.entity.Section
 import com.machiav3lli.fdroid.index.RepositoryUpdater
 import com.machiav3lli.fdroid.ui.activities.MainActivityX
 import com.machiav3lli.fdroid.ui.components.ActionChip
-import com.machiav3lli.fdroid.ui.components.CategoryChip
 import com.machiav3lli.fdroid.ui.components.ProductsListItem
+import com.machiav3lli.fdroid.ui.components.SelectChip
 import com.machiav3lli.fdroid.ui.compose.icons.Phosphor
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.FunnelSimple
+import com.machiav3lli.fdroid.ui.compose.icons.phosphor.HeartStraightFill
+import com.machiav3lli.fdroid.ui.compose.utils.blockBorder
 import com.machiav3lli.fdroid.ui.navigation.NavItem
 import com.machiav3lli.fdroid.ui.navigation.SideNavBar
 import com.machiav3lli.fdroid.utility.onLaunchClick
@@ -55,7 +59,7 @@ fun ExplorePage(viewModel: ExploreVM) {
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val filteredProducts by viewModel.filteredProducts.collectAsState()
-    val installedList by viewModel.installed.collectAsState(null)
+    val installedList by viewModel.installed.collectAsState(emptyMap())
     val repositories by viewModel.repositories.collectAsState(null)
     val repositoriesMap by remember(repositories) {
         mutableStateOf(repositories?.associateBy { repo -> repo.id } ?: emptyMap())
@@ -96,6 +100,7 @@ fun ExplorePage(viewModel: ExploreVM) {
                             Preferences[Preferences.Key.SortOrderAscendingExplore],
                         ).toString()
                     )
+
                     else -> {}
                 }
             }
@@ -105,36 +110,48 @@ fun ExplorePage(viewModel: ExploreVM) {
     Column(
         Modifier
             .background(MaterialTheme.colorScheme.background)
-            .fillMaxSize()
+            .fillMaxSize(),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 6.dp),
+            modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             var favoriteFilter by remember {
                 mutableStateOf(false)
             }
 
-            CategoryChip(
-                category = stringResource(id = R.string.favorite_applications),
-                isSelected = favoriteFilter,
-                onSelected = {
-                    favoriteFilter = !favoriteFilter
-                    viewModel.setSections(
-                        if (it) Section.FAVORITE
-                        else Section.All
-                    )
-                }
-            )
-            Spacer(modifier = Modifier.weight(1f))
+            SelectChip(
+                modifier = Modifier.weight(1f),
+                text = stringResource(id = R.string.favorite_applications),
+                icon = Phosphor.HeartStraightFill,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    selectedContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(48.dp),
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.primary,
+                    iconColor = MaterialTheme.colorScheme.onSurface,
+                    labelColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                checked = favoriteFilter
+            ) {
+                favoriteFilter = !favoriteFilter
+                viewModel.setSections(
+                    if (favoriteFilter) Section.FAVORITE
+                    else Section.All
+                )
+            }
             ActionChip(
+                modifier = Modifier.weight(1f),
                 text = stringResource(id = R.string.sort_filter),
                 icon = Phosphor.FunnelSimple
             ) {
                 showSortSheet = true
             }
         }
-        Row {
+        Row(
+            modifier = Modifier.blockBorder(),
+        ) {
             if (Preferences[Preferences.Key.ShowCategoriesBar]) SideNavBar(
                 keys = listOf(FILTER_CATEGORY_ALL) + (categories.sorted()),
                 selectedKey = selectedCategory,
@@ -147,11 +164,13 @@ fun ExplorePage(viewModel: ExploreVM) {
             }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Absolute.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 state = listState,
+                contentPadding = PaddingValues(vertical = 8.dp),
             ) {
                 items(
-                    items = filteredProducts?.map { it.toItem() } ?: emptyList(),
+                    items = filteredProducts?.map { it.toItem(installedList[it.packageName]) }
+                        ?: emptyList(),
                 ) { item ->
                     ProductsListItem(
                         item = item,
@@ -196,7 +215,7 @@ fun ExplorePage(viewModel: ExploreVM) {
                 showSortSheet = false
             }
         ) {
-            SortFilterPage(NavItem.Explore.destination) {
+            SortFilterSheet(NavItem.Explore.destination) {
                 scope.launch { sortSheetState.hide() }
                 showSortSheet = false
             }

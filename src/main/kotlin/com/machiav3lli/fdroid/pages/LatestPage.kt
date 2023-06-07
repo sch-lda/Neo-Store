@@ -1,6 +1,7 @@
 package com.machiav3lli.fdroid.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ import com.machiav3lli.fdroid.ui.components.ProductsListItem
 import com.machiav3lli.fdroid.ui.compose.ProductsHorizontalRecycler
 import com.machiav3lli.fdroid.ui.compose.icons.Phosphor
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.FunnelSimple
+import com.machiav3lli.fdroid.ui.compose.utils.blockBorder
 import com.machiav3lli.fdroid.ui.compose.utils.vertical
 import com.machiav3lli.fdroid.ui.navigation.NavItem
 import com.machiav3lli.fdroid.utility.onLaunchClick
@@ -51,7 +53,7 @@ fun LatestPage(viewModel: LatestVM) {
     val scope = rememberCoroutineScope()
     val filteredPrimaryList by viewModel.filteredProducts.collectAsState()
     val secondaryList by viewModel.secondaryProducts.collectAsState(null)
-    val installedList by viewModel.installed.collectAsState(null)
+    val installedList by viewModel.installed.collectAsState(emptyMap())
     val repositories by viewModel.repositories.collectAsState(null)
     val repositoriesMap by remember(repositories) {
         mutableStateOf(repositories?.associateBy { repo -> repo.id } ?: emptyMap())
@@ -89,6 +91,7 @@ fun LatestPage(viewModel: LatestVM) {
                             Preferences[Preferences.Key.SortOrderAscendingLatest],
                         ).toString()
                     )
+
                     else -> {}
                 }
             }
@@ -97,8 +100,10 @@ fun LatestPage(viewModel: LatestVM) {
 
     LazyColumn(
         Modifier
+            .blockBorder()
             .background(MaterialTheme.colorScheme.background)
             .fillMaxSize(),
+        contentPadding = PaddingValues(vertical = 8.dp),
     ) {
         item {
             Row(
@@ -116,7 +121,8 @@ fun LatestPage(viewModel: LatestVM) {
                 ProductsHorizontalRecycler(
                     modifier = Modifier.weight(1f),
                     productsList = secondaryList,
-                    repositories = repositoriesMap
+                    repositories = repositoriesMap,
+                    installedMap = installedList,
                 ) { item ->
                     mainActivityX.navigateProduct(item.packageName)
                 }
@@ -138,7 +144,8 @@ fun LatestPage(viewModel: LatestVM) {
             }
         }
         items(
-            items = filteredPrimaryList?.map { it.toItem() } ?: emptyList(),
+            items = filteredPrimaryList?.map { it.toItem(installedList[it.packageName]) }
+                ?: emptyList(),
         ) { item ->
             ProductsListItem(
                 item = item,
@@ -180,7 +187,7 @@ fun LatestPage(viewModel: LatestVM) {
                 showSortSheet = false
             }
         ) {
-            SortFilterPage(NavItem.Latest.destination) {
+            SortFilterSheet(NavItem.Latest.destination) {
                 scope.launch { sortSheetState.hide() }
                 showSortSheet = false
             }

@@ -1,19 +1,21 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 
-val composeVersion = "1.4.0"
-val composeCompilerVersion = "1.4.3"
-val roomVersion = "2.5.1"
-val navigationVersion = "2.5.3"
-val accompanistVersion = "0.30.1"
-val hiltVersion = "2.45"
+val accompanistVersion = "0.31.2-alpha"
+val composeVersion = "1.5.0-alpha04"
+val composeCompilerVersion = "1.4.7"
+val hiltVersion = "2.46.1"
+val material3Version = "1.1.0"
+val navigationVersion = "2.6.0-rc01"
 val retrofitVersion = "2.9.0"
+val roomVersion = "2.5.1"
+val coroutinesVersion = "1.7.1"
 
 plugins {
-    id("com.android.application") version ("7.4.2")
-    kotlin("android") version ("1.8.10")
-    kotlin("kapt") version ("1.8.10")
-    kotlin("plugin.serialization") version ("1.8.10")
-    id("com.google.devtools.ksp") version ("1.8.10-1.0.9")
+    id("com.android.application") version ("8.0.1")
+    kotlin("android") version ("1.8.21")
+    kotlin("kapt") version ("1.8.21")
+    kotlin("plugin.serialization") version ("1.8.21")
+    id("com.google.devtools.ksp") version ("1.8.21-1.0.11")
     id("com.google.dagger.hilt.android") version ("2.45")
 }
 
@@ -25,8 +27,8 @@ android {
         applicationId = "com.machiav3lli.fdroid"
         minSdk = 23
         targetSdk = 33
-        versionCode = 1000
-        versionName = "1.0.0-alpha01"
+        versionCode = 1002
+        versionName = "1.0.0-alpha03"
         buildConfigField("String", "KEY_API_EXODUS", "\"81f30e4903bde25023857719e71c94829a41e6a5\"")
 
         javaCompileOptions {
@@ -47,8 +49,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
@@ -58,6 +60,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 
@@ -91,7 +94,7 @@ android {
             )
         }
     }
-    packagingOptions {
+    packaging {
         jniLibs {
             excludes += listOf("/okhttp3/internal/publicsuffix/*")
         }
@@ -117,13 +120,13 @@ android {
 dependencies {
 
     // Core
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10")
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.8.10-1.0.9")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21")
+    implementation("com.google.devtools.ksp:symbol-processing-api:1.8.21-1.0.11")
     implementation("androidx.preference:preference-ktx:1.2.0")
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
     // Material3
-    implementation("com.google.android.material:material:1.8.0")
+    implementation("com.google.android.material:material:1.9.0")
 
     // Coil
     implementation("io.coil-kt:coil:2.3.0")
@@ -143,11 +146,11 @@ dependencies {
     implementation("io.reactivex.rxjava3:rxandroid:3.0.2")
 
     // LibSu
-    implementation("com.github.topjohnwu.libsu:core:5.0.4")
+    implementation("com.github.topjohnwu.libsu:core:5.0.5")
 
     // JSON
-    implementation("com.fasterxml.jackson.core:jackson-core:2.14.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.15.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
     // Markdown
     implementation("org.jetbrains:markdown:0.4.1")
@@ -158,8 +161,8 @@ dependencies {
 
     // Coroutines / Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion")
 
     // Room
     implementation("androidx.room:room-runtime:$roomVersion")
@@ -171,7 +174,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:$composeVersion")
     implementation("androidx.compose.foundation:foundation:$composeVersion")
     implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
-    implementation("androidx.compose.material3:material3:1.1.0-beta01")
+    implementation("androidx.compose.material3:material3:$material3Version")
     implementation("androidx.compose.animation:animation:$composeVersion")
     implementation("androidx.navigation:navigation-compose:$navigationVersion")
     implementation("com.google.accompanist:accompanist-navigation-animation:$accompanistVersion")
@@ -180,8 +183,6 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
     debugImplementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
-    debugImplementation("androidx.customview:customview-poolingcontainer:1.0.0")
-    debugImplementation("androidx.customview:customview:1.2.0-alpha02")
 }
 
 // using a task as a preBuild dependency instead of a function that takes some time insures that it runs

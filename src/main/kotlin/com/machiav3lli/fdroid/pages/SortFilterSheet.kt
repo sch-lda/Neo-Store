@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,13 +24,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.flowlayout.FlowRow
-import com.google.accompanist.flowlayout.MainAxisAlignment
 import com.machiav3lli.fdroid.FILTER_CATEGORY_ALL
 import com.machiav3lli.fdroid.MainApplication
 import com.machiav3lli.fdroid.R
@@ -46,14 +46,16 @@ import com.machiav3lli.fdroid.ui.compose.icons.phosphor.ArrowUUpLeft
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.Check
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.SortAscending
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.SortDescending
+import com.machiav3lli.fdroid.ui.compose.utils.blockBorder
 import com.machiav3lli.fdroid.ui.navigation.NavItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.mapLatest
 
 @SuppressLint("FlowOperatorInvokedInComposition")
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
+fun SortFilterSheet(navPage: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     val nestedScrollConnection = rememberNestedScrollInteropConnection()
     val dbHandler = MainApplication.db
     val repos by dbHandler.repositoryDao.allFlow.collectAsState(emptyList())
@@ -119,7 +121,6 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
             Column(
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
-                Divider(thickness = 2.dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -168,6 +169,7 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
                     start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
                     end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
                 )
+                .blockBorder()
                 .nestedScroll(nestedScrollConnection)
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -180,11 +182,11 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge
                 )
+            }
+            item {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     mainAxisSpacing = 8.dp,
-                    crossAxisSpacing = 4.dp,
-                    mainAxisAlignment = MainAxisAlignment.Center,
                 ) {
 
                     sortKey.default.value.values.forEach {
@@ -215,13 +217,13 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge
                 )
+            }
+            item {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     mainAxisSpacing = 8.dp,
-                    crossAxisSpacing = 4.dp,
-                    mainAxisAlignment = MainAxisAlignment.Center,
                 ) {
-                    activeRepos.forEach {
+                    activeRepos.sortedBy { it.name }.forEach {
                         var checked by remember {
                             mutableStateOf(
                                 !filteredOutRepos.contains(it.id.toString())
@@ -230,7 +232,7 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
 
                         SelectChip(
                             text = it.name,
-                            checked = checked
+                            checked = checked,
                         ) {
                             checked = !checked
                             if (checked)
@@ -248,11 +250,11 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge
                 )
+            }
+            item {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     mainAxisSpacing = 8.dp,
-                    crossAxisSpacing = 4.dp,
-                    mainAxisAlignment = MainAxisAlignment.Center,
                 ) {
                     (listOf(FILTER_CATEGORY_ALL) + categories.sorted()).forEach {
                         SelectChip(
@@ -271,30 +273,31 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge
                 )
+            }
+            item {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     mainAxisSpacing = 8.dp,
-                    crossAxisSpacing = 4.dp,
-                    mainAxisAlignment = MainAxisAlignment.Center,
                 ) {
-                    AntiFeature.values().forEach {
-                        var checked by remember {
-                            mutableStateOf(
-                                !filteredAntifeatures.contains(it.key)
-                            )
-                        }
+                    AntiFeature.values().sortedBy { context.getString(it.titleResId) }
+                        .forEach {
+                            var checked by remember {
+                                mutableStateOf(
+                                    !filteredAntifeatures.contains(it.key)
+                                )
+                            }
 
-                        SelectChip(
-                            text = stringResource(id = it.titleResId),
-                            checked = checked
-                        ) {
-                            checked = !checked
-                            if (checked)
-                                filteredAntifeatures.remove(it.key)
-                            else
-                                filteredAntifeatures.add(it.key)
+                            SelectChip(
+                                text = stringResource(id = it.titleResId),
+                                checked = checked
+                            ) {
+                                checked = !checked
+                                if (checked)
+                                    filteredAntifeatures.remove(it.key)
+                                else
+                                    filteredAntifeatures.add(it.key)
+                            }
                         }
-                    }
                 }
             }
             item {
@@ -304,13 +307,13 @@ fun SortFilterPage(navPage: String, onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge
                 )
+            }
+            item {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     mainAxisSpacing = 8.dp,
-                    crossAxisSpacing = 4.dp,
-                    mainAxisAlignment = MainAxisAlignment.Center,
                 ) {
-                    licenses.forEach {
+                    licenses.sorted().forEach {
                         var checked by remember {
                             mutableStateOf(
                                 !filteredLicenses.contains(it)

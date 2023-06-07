@@ -12,10 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
@@ -75,7 +72,7 @@ class PrefsActivityX : AppCompatActivity() {
         PrefsVM.Factory(db)
     }
 
-    @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         (application as MainApplication).mActivity = this
         setCustomTheme()
@@ -91,27 +88,20 @@ class PrefsActivityX : AppCompatActivity() {
                 }
             ) {
                 navController = rememberAnimatedNavController()
-                val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-                var pageTitle: Int? by remember {
+                var pageTitle by remember {
                     mutableStateOf(NavItem.Prefs.title)
                 }
 
                 navController.addOnDestinationChangedListener { _, destination, _ ->
-                    pageTitle = destination.destinationToItem()?.title
+                    pageTitle = destination.destinationToItem()?.title ?: NavItem.Prefs.title
                 }
 
                 Scaffold(
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onBackground,
                     bottomBar = { BottomNavBar(page = NAV_PREFS, navController = navController) },
                     topBar = {
-                        TopBar(
-                            title = stringResource(
-                                id = pageTitle ?: NavItem.Prefs.title
-                            ),
-                            scrollBehavior = scrollBehavior
-                        )
+                        TopBar(title = stringResource(id = pageTitle))
                     }
                 ) { paddingValues ->
                     LaunchedEffect(key1 = navController) {
@@ -151,9 +141,11 @@ class PrefsActivityX : AppCompatActivity() {
                 uri?.scheme == "package" || uri?.scheme == "fdroid.app" -> {
                     uri.schemeSpecificPart?.nullIfEmpty()
                 }
+
                 uri?.scheme == "market" && uri.host == "details"        -> {
                     uri.getQueryParameter("id")?.nullIfEmpty()
                 }
+
                 uri != null && uri.scheme in setOf("http", "https")     -> {
                     val host = uri.host.orEmpty()
                     if (host == "f-droid.org" || host.endsWith(".f-droid.org")) {
@@ -162,6 +154,7 @@ class PrefsActivityX : AppCompatActivity() {
                         null
                     }
                 }
+
                 else                                                    -> {
                     null
                 }
@@ -175,6 +168,7 @@ class PrefsActivityX : AppCompatActivity() {
                 val fingerprint = specialIntent.fingerprint
                 navController.navigate("${NavItem.ReposPrefs.destination}?address=$address?fingerprint=$fingerprint")
             }
+
             is SpecialIntent.Updates -> navController.navigate(NavItem.Installed.destination)
             is SpecialIntent.Install -> {
                 val packageName = specialIntent.packageName
@@ -220,6 +214,7 @@ class PrefsActivityX : AppCompatActivity() {
                     )
                 }
             }
+
             ACTION_UPDATES     -> handleSpecialIntent(SpecialIntent.Updates)
             ACTION_INSTALL     -> handleSpecialIntent(
                 SpecialIntent.Install(

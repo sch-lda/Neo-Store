@@ -4,16 +4,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
@@ -24,16 +23,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.flowlayout.FlowRow
 import com.google.accompanist.flowlayout.MainAxisAlignment
+import com.machiav3lli.fdroid.R
 import com.machiav3lli.fdroid.entity.ActionState
 import com.machiav3lli.fdroid.entity.DownloadState
 import com.machiav3lli.fdroid.ui.components.MainActionButton
 import com.machiav3lli.fdroid.ui.components.NetworkImage
+import com.machiav3lli.fdroid.ui.components.PRODUCT_CARD_ICON
 import com.machiav3lli.fdroid.ui.components.SecondaryActionButton
 import com.machiav3lli.fdroid.ui.compose.icons.Phosphor
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.CircleWavyWarning
+import com.machiav3lli.fdroid.utility.extension.text.formatDateTime
 import com.machiav3lli.fdroid.utility.extension.text.formatSize
 
 @Composable
@@ -45,7 +48,7 @@ fun AppInfoHeader(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.extraLarge,
         tonalElevation = 8.dp
     ) {
         Column(
@@ -104,30 +107,29 @@ fun TopBarHeader(
     actions: @Composable () -> Unit = {},
 ) {
     Column(
-        Modifier
-            .padding(8.dp)
-            .fillMaxWidth()
+        modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = modifier.padding(0.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            NetworkImage(
-                modifier = Modifier.size(56.dp),
-                data = icon
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.SpaceAround
-            ) {
+        ListItem(
+            modifier = Modifier.fillMaxWidth(),
+            colors = ListItemDefaults.colors(
+                containerColor = Color.Transparent,
+            ),
+            leadingContent = {
+                NetworkImage(
+                    modifier = Modifier.size(PRODUCT_CARD_ICON),
+                    data = icon
+                )
+            },
+            headlineContent = {
                 Text(text = appName, style = MaterialTheme.typography.titleMedium)
+            },
+            supportingContent = {
                 Text(text = packageName, style = MaterialTheme.typography.bodyMedium)
+            },
+            trailingContent = {
+                actions()
             }
-            Box { actions() }
-        }
+        )
 
         AnimatedVisibility(visible = state is DownloadState) {
             DownloadProgress(
@@ -151,16 +153,15 @@ fun CardButton(
 ) {
     Surface(
         modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
+            .clip(MaterialTheme.shapes.extraLarge)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(12.dp),
-        color = Color.Transparent
+            .padding(8.dp),
+        color = Color.Transparent,
     ) {
         Icon(
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(PRODUCT_CARD_ICON - 16.dp),
             imageVector = icon,
             contentDescription = description,
-            tint = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -171,6 +172,7 @@ fun DownloadProgress(
     totalSize: Long,
     downloaded: Long?,
     isIndeterminate: Boolean,
+    finishedTime: Long = 0L,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -183,9 +185,23 @@ fun DownloadProgress(
                     .fillMaxWidth()
                     .clip(ShapeDefaults.Large),
             )
+        } else if (totalSize < 1L) {
+            Text(
+                text = stringResource(
+                    id = if (totalSize == 0L) R.string.canceled
+                    else R.string.error
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        } else if (downloaded == totalSize && totalSize == 1L) {
+            Text(
+                text = "${stringResource(id = R.string.finished)} ${finishedTime.formatDateTime()}",
+                style = MaterialTheme.typography.bodySmall,
+            )
         } else {
             Text(
-                text = "${downloaded?.formatSize()}/${totalSize.formatSize()}"
+                text = "${downloaded?.formatSize()}/${totalSize.formatSize()}",
+                style = MaterialTheme.typography.bodySmall,
             )
             LinearProgressIndicator(
                 modifier = Modifier
@@ -199,28 +215,23 @@ fun DownloadProgress(
 
 @Composable
 fun WarningCard(message: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.errorContainer,
-        tonalElevation = 8.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    ListItem(
+        modifier = Modifier.clip(MaterialTheme.shapes.large),
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
+        leadingContent = {
             Icon(
                 imageVector = Phosphor.CircleWavyWarning,
                 tint = MaterialTheme.colorScheme.onErrorContainer,
                 contentDescription = message,
             )
+        },
+        headlineContent = {
             Text(
                 text = message,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
         }
-    }
+    )
 }

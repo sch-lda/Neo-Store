@@ -27,13 +27,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -103,6 +106,7 @@ import com.machiav3lli.fdroid.ui.compose.icons.phosphor.Copyleft
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.Copyright
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.Download
 import com.machiav3lli.fdroid.ui.compose.icons.phosphor.GlobeSimple
+import com.machiav3lli.fdroid.ui.compose.utils.blockBorder
 import com.machiav3lli.fdroid.ui.dialog.ActionSelectionDialogUI
 import com.machiav3lli.fdroid.ui.dialog.BaseDialog
 import com.machiav3lli.fdroid.ui.dialog.KeyDialogUI
@@ -124,7 +128,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlin.math.floor
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AppSheet(
     viewModel: AppSheetVM,
@@ -138,8 +142,9 @@ fun AppSheet(
     val showScreenshots = remember { mutableStateOf(false) }
     val openDialog = remember { mutableStateOf(false) }
     val dialogKey: MutableState<DialogKey?> = remember { mutableStateOf(null) }
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { 2 })
     var screenshotPage by remember { mutableStateOf(0) }
+    val screenshotsPageState = rememberModalBottomSheetState(true)
     val installed by viewModel.installedItem.collectAsState(null)
     val products by viewModel.products.collectAsState(null)
     val exodusInfo by viewModel.exodusInfo.collectAsState(null)
@@ -261,18 +266,21 @@ fun AppSheet(
                 )
                 openDialog.value = true
             }
+
             installedItem != null
                     && installedItem.versionCode > release.versionCode
                     && !Preferences[Preferences.Key.DisableDownloadVersionCheck] -> {
                 dialogKey.value = DialogKey.ReleaseIssue(R.string.incompatible_older_DESC)
                 openDialog.value = true
             }
+
             installedItem != null
                     && installedItem.signature != release.signature
                     && !Preferences[Preferences.Key.DisableSignatureCheck]       -> {
                 dialogKey.value = DialogKey.ReleaseIssue(R.string.incompatible_signature_DESC)
                 openDialog.value = true
             }
+
             else                                                                 -> {
                 val productRepository =
                     viewModel.productRepos.value.asSequence()
@@ -305,6 +313,7 @@ fun AppSheet(
                 }
                 Unit
             }
+
             ActionState.Launch    -> {
                 viewModel.installedItem.value?.let { installed ->
                     if (installed.launcherActivities.size >= 2) {
@@ -321,12 +330,14 @@ fun AppSheet(
 
                 Unit
             }
+
             ActionState.Details   -> {
                 context.startActivity(
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                         .setData(Uri.parse("package:$packageName"))
                 )
             }
+
             ActionState.Uninstall -> {
                 scope.launch {
                     AppInstaller.getInstance(MainApplication.mainActivity)?.defaultInstaller
@@ -334,12 +345,14 @@ fun AppSheet(
                 }
                 Unit
             }
+
             is ActionState.Cancel -> { // TODO fix cancel, send a cancel intent maybe?
                 val binder = downloadConnection.binder
                 if (viewModel.downloadState.value != null && binder != null) {
                     binder.cancel(packageName)
                 } else Unit
             }
+
             ActionState.Share     -> {
                 context.shareIntent(
                     packageName,
@@ -347,11 +360,13 @@ fun AppSheet(
                     productRepos[0].second.name
                 )
             }
+
             ActionState.Bookmark,
             ActionState.Bookmarked,
                                   -> {
                 viewModel.setFavorite(packageName, action is ActionState.Bookmark)
             }
+
             else                  -> Unit
         }::class
     }
@@ -359,7 +374,9 @@ fun AppSheet(
     suggestedProductRepo?.let { (product, repo) ->
         Scaffold(
             topBar = {
-                Column {
+                Column(
+                    modifier = Modifier.padding(bottom = 8.dp),
+                ) {
                     TopBarHeader(
                         appName = product.label,
                         packageName = product.packageName,
@@ -399,7 +416,8 @@ fun AppSheet(
                     )
                     AppInfoChips(
                         product = product,
-                        latestRelease = product.displayRelease
+                        latestRelease = product.displayRelease,
+                        installed = installed,
                     )
                     MeterIconsBar(
                         modifier = Modifier.fillMaxWidth(),
@@ -421,15 +439,19 @@ fun AppSheet(
             contentColor = MaterialTheme.colorScheme.onBackground,
             snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { paddingValues ->
-            HorizontalPager(pageCount = 2, state = pagerState) { pageIndex ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .padding(
+                        top = paddingValues.calculateTopPadding() - 4.dp,
+                        start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
+                        end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
+                    )
+                    .blockBorder(),
+            ) { pageIndex ->
                 if (pageIndex == 0) {
                     LazyColumn(
                         modifier = Modifier
-                            .padding(
-                                top = paddingValues.calculateTopPadding() - 4.dp,
-                                start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
-                                end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
-                            )
                             .nestedScroll(nestedScrollConnection)
                             .fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -503,7 +525,6 @@ fun AppSheet(
                         if (links.isNotEmpty()) {
                             item {
                                 ExpandableBlock(
-                                    modifier = Modifier.padding(horizontal = 8.dp),
                                     heading = stringResource(id = R.string.links),
                                     positive = true,
                                     preExpanded = true
@@ -525,13 +546,13 @@ fun AppSheet(
                         if (product.donates.isNotEmpty()) {
                             item {
                                 ExpandableBlock(
-                                    modifier = Modifier.padding(horizontal = 8.dp),
                                     heading = stringResource(id = R.string.donate),
                                     positive = true,
                                     preExpanded = false
                                 ) {
                                     product.donates.forEach { item ->
-                                        LinkItem(linkType = DonateType(item, context),
+                                        LinkItem(
+                                            linkType = DonateType(item, context),
                                             onClick = { link ->
                                                 link?.let { onUriClick(it, true) }
                                             },
@@ -612,11 +633,6 @@ fun AppSheet(
                 } else {
                     LazyColumn(
                         modifier = Modifier
-                            .padding(
-                                top = paddingValues.calculateTopPadding() - 4.dp,
-                                start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
-                                end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
-                            )
                             .nestedScroll(nestedScrollConnection)
                             .fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -946,7 +962,15 @@ fun AppSheet(
             }
 
             if (showScreenshots.value) {
-                BaseDialog(openDialogCustom = showScreenshots) {
+                ModalBottomSheet(
+                    sheetState = screenshotsPageState,
+                    containerColor = Color.Transparent,
+                    dragHandle = null,
+                    onDismissRequest = {
+                        scope.launch { screenshotsPageState.hide() }
+                        showScreenshots.value = false
+                    }
+                ) {
                     ScreenshotsPage(
                         screenshots = suggestedProductRepo.first.screenshots.map {
                             it.toScreenshotItem(
@@ -975,6 +999,7 @@ fun AppSheet(
                                 openDialog.value = false
                             }
                         )
+
                         else                -> KeyDialogUI(
                             key = dialogKey.value,
                             openDialog = openDialog,
@@ -992,6 +1017,7 @@ fun AppSheet(
                                             e.printStackTrace()
                                         }
                                     }
+
                                     else              -> {
                                         dialogKey.value = null
                                         openDialog.value = false
